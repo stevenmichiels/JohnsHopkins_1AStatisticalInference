@@ -1,0 +1,165 @@
+---
+title: 'Statistical Inference Course Project - Part I'
+author: "Steven Michiels"
+date: "4/16/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Overview
+This document reports on the simulation project of the Johns Hopkins Statistical Inference Course. 
+
+The project essentially is a direct application of the important __central limit theorem (CLT)__. The CLT states that when drawing a simple random sample of sufficiently large size n from any population with mean $\mu$ and standard deviation $\sigma$, the sampling distribution of the sample mean is approximally normally distributed N($\mu$, $\sigma$^2/n) (Moore et al., Introduction to the Practics of Statistics). 
+
+In this project, a sufficiently large sample (n=40) was drawn many times (1000 samples) from an exponential distribution. The resulting sampling distribution of the mean indeed is approximately normally distributed with the mean and variance very close to the expected values. In practice this theorem allows us to estimate the population mean and standard deviation from any pouplation distribution based on a sufficiently large sample.
+
+## Simulations
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(ggplot2)
+```
+We define the __rate $\lambda$__ of the exponential distribution, as well as the __sample size n__. The __population mean and standard deviation__ are __known__ from the rate $\lambda$.
+```{r}
+set.seed(3422)
+n=40
+lambda=.2
+population_mean=1/lambda
+population_variance=(1/lambda)^2
+```
+
+We then __compare__ the __mean of a drawn sample__ with the __known population mean__.
+
+```{r eval=FALSE}
+sample1=setNames(data.frame(rexp(n,lambda)), "value")
+sample_mean1=mean(sample1$value)
+```
+
+We __plot__ the __drawn sample__, together with the __actual distribution__.
+
+```{r eval=FALSE}
+g1=ggplot(sample1,aes(x=value))
+g1=g1+geom_histogram(aes(y=..density..),color="orange", fill="white",binwidth=2)
+g1=g1+xlab("value")+ggtitle("Histogram for a single sample of size 40")
+g1=g1+geom_vline(aes(xintercept=sample_mean1),
+            color="orange", linetype="dashed", size=2)
+g1=g1+geom_vline(aes(xintercept=population_mean),
+            color="blue", linetype="dashed", size=2)
+g1=g1+stat_function(fun = dexp, args = list(rate=lambda),color="blue", size=1)
+g1=g1+annotate("text", x = 10.5, y = .25, label = "Sampled exponential (n=40)", color="orange", size=5)
+g1=g1+annotate("text", x = 10.5, y = .2, label = "Theoretical exponential (rate = 0.2)", color="blue", size=5)
+plot(g1)
+```
+
+The previously drawn __large sample__ provides us with an __estimate for the population mean__. We now __show__ that the __sample mean is approximately normally distributed N($\mu$, $\sigma$^2/n)__, by drawing a __large number (1000 samples) of samples__ of large size (n=40). 
+
+```{r}
+simul=1000
+sample2=setNames(data.frame(rep(0,simul)), "value")
+for (i in 1 : simul) sample2[i,] = mean(rexp(n,lambda))
+```
+
+We __compare__ the __mean of the sampling distribution__ with the __population mean__. 
+We also calculate the variance of the sample mean and __derive__ from this an __estimate for the variance of the population__. 
+
+```{r}
+sample_mean2=(mean(sample2$value))
+sample_variance=var(sample2$value)
+population_variance_estimate=sample_variance*n
+```
+
+We calculate the __95% confidence intervals__ for the __mean of the sampling distribution__ and for a __perfect Gaussian N($\mu$, $\sigma$^2/n)__. 
+```{r}
+sample_lower_95percent_bound=sample_mean2 - qnorm(.975)*sqrt(sample_variance)
+sample_upper_95percent_bound=sample_mean2 + qnorm(.975)*sqrt(sample_variance)
+gaussian_upper_95percent_bound=population_mean + qnorm(.975)*sqrt(population_variance/n)
+gaussian_lower_95percent_bound=population_mean - qnorm(.975)*sqrt(population_variance/n)
+
+```
+
+And we create a __density plot__ for the sampling distribution and for a perfect Gaussian N($\mu$, $\sigma$^2/n).
+```{r eval=FALSE}
+g2=ggplot(sample2,aes(x=value))
+g2=g2+geom_histogram(aes(y=..density..),color="orange", fill="white",binwidth=.3)
+g2=g2+geom_density(colour="orange", size=1) 
+g2=g2+xlab("value")+ggtitle("Histogram of the mean for a 1000 samples of size 40")
+g2=g2+geom_vline(aes(xintercept=sample_mean2),
+            color="orange", linetype="dashed", size=1)
+g2=g2+geom_vline(aes(xintercept=population_mean),
+            color="blue", linetype="dashed", size=1)
+g2=g2+annotate("text", x = 7, y = .55, label = "Distribution for sample (n=40)", color="orange", size=5)
+g2=g2+annotate("text", x = 7, y = .5, label = "N((1/lambda),(1/lambda)^2/n)", color="blue", size=5)
+g2=g2+stat_function(fun = dnorm, args = list(sd=sqrt(population_variance/n),mean=population_mean),color="blue", size=1)
+plot(g2)
+```
+
+## Sample Mean versus Theoretical Mean
+
+We compare the mean of a drawn sample with the known population mean. Later on we will determine the interval that will contain the mean of such a random sample with 95% confidence.
+
+```{r echo=FALSE}
+sample1=setNames(data.frame(rexp(n,lambda)), "value")
+sample_mean1=mean(sample1$value)
+cbind(sample_mean1,population_mean)
+```
+
+We plot the drawn sample, together with the actual distribution.
+
+```{r echo=FALSE}
+g1=ggplot(sample1,aes(x=value))
+g1=g1+geom_histogram(aes(y=..density..),color="orange", fill="white",binwidth=2)
+g1=g1+xlab("value")+ggtitle("Histogram for a single sample of size 40")
+g1=g1+geom_vline(aes(xintercept=sample_mean1),
+            color="orange", linetype="dashed", size=2)
+g1=g1+geom_vline(aes(xintercept=population_mean),
+            color="blue", linetype="dashed", size=2)
+g1=g1+stat_function(fun = dexp, args = list(rate=lambda),color="blue", size=1)
+g1=g1+annotate("text", x = 10.5, y = .25, label = "Sampled exponential (n=40)", color="orange", size=5)
+g1=g1+annotate("text", x = 10.5, y = .2, label = "Theoretical exponential (rate = 0.2)", color="blue", size=5)
+plot(g1)
+```
+
+## Sample Variance versus Theoretical Variance
+
+Performing a __large number of samples__ with a large size allows us to __determine the variance of the sampling distribution of the mean__. The __mean of the sampling distribution of the mean__ is __very close to the population mean__. Moreover, the __estimated population variance__, estimated from the variance of the sampling distribution of the mean, is __very close to the actual population variance__.
+
+
+```{r echo=FALSE}
+cbind(sample_mean2, population_mean)
+cbind(sample_variance)
+cbind(population_variance_estimate,population_variance)
+```
+
+## Distribution
+
+The __obtained distribution of the sample mean__ looks __very similar to a perfect Gaussian N($\mu$, $\sigma$^2/n)__.
+
+```{r echo=FALSE}
+g2=ggplot(sample2,aes(x=value))
+g2=g2+geom_histogram(aes(y=..density..),color="orange", fill="white",binwidth=.3)
+g2=g2+geom_density(colour="orange", size=1) 
+g2=g2+xlab("value")+ggtitle("Histogram of the mean for a 1000 samples of size 40")
+g2=g2+geom_vline(aes(xintercept=sample_mean2),
+            color="orange", linetype="dashed", size=1)
+g2=g2+geom_vline(aes(xintercept=population_mean),
+            color="blue", linetype="dashed", size=1)
+g2=g2+annotate("text", x = 7, y = .55, label = "Distribution for sample (n=40)", color="orange", size=5)
+g2=g2+annotate("text", x = 7, y = .5, label = "N((1/lambda),(1/lambda)^2/n)", color="blue", size=5)
+g2=g2+stat_function(fun = dnorm, args = list(sd=sqrt(population_variance/n),mean=population_mean),color="blue", size=1)
+plot(g2)
+```
+
+In addition, the __95% confidence interval for the obtained distribution of the sample mean__ is __very close to the 95% confidence interval for a perfect Gaussian N($\mu$, $\sigma$^2/n)__. 
+
+
+```{r echo=FALSE}
+cbind(population_variance,population_variance_estimate)
+cbind(sample_lower_95percent_bound,gaussian_lower_95percent_bound)
+cbind(sample_upper_95percent_bound,gaussian_upper_95percent_bound)
+```
+
+We therefore __confirmed the central limit theorem with an example__: when drawing a simple random sample of sufficiently large size n from any population with mean $\mu$ and standard deviation $\sigma$, the sampling distribution of the sample mean indeed is approximally normally distributed N($\mu$, $\sigma$^2/n).
